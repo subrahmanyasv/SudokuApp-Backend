@@ -1,0 +1,7 @@
+[project]
+name = "sudoku_backend"
+version = "0.1.0"
+description = "The backend for the Sudoku game."
+
+[tool.setuptools]
+packages = ["src"]
