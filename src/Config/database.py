@@ -42,6 +42,9 @@ def get_db_session():
     finally:
         db.close()
 
+def getSessionLocal() -> sessionmaker:
+    return SessionLocal
+
 def close_database():
     """Close database connections gracefully"""
     global engine

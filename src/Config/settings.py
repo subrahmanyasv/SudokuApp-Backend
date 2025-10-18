@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     ALLOWED_ORIGINS: Union[str, List[str]] = ["*"]
 
-    PUZZLES_TO_GENERATE_PER_JOB: int = 5
+    PUZZLES_TO_GENERATE_PER_JOB: int = 10
     EASY_BLANKS: int = 40
     MEDIUM_BLANKS: int = 50
     HARD_BLANKS: int = 60

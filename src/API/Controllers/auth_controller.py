@@ -22,9 +22,11 @@ def create_user(newUser: CreateUser, db: Session) -> AuthResponse:
 
     access_token = create_access_token({'email': newUser.email, 'username': newUser.username, "id": str(new_user.id)})
 
+    message = f"username: {newUser.username}, email: {newUser.email}, user_id: {new_user.id}"
+
     return {
         "status": "success",
-        "message": "User created successfully",
+        "message": message,
         "token": access_token
     }
 
@@ -39,10 +41,11 @@ def login_user(user_credentials: UserLogin, db: Session) ->  AuthResponse:
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail = "Incorrect password")
     
     access_token = create_access_token({'email': user_credentials.email, 'username': user.username, "id": str(user.id)})
+    message = f"username: {user.username}, email: {user.email}, user_id: {user.id}"
 
     return {
         "status": "success",
-        "message": "User logged in successfully",
+        "message": message,
         "token": access_token
     }
 

@@ -15,8 +15,7 @@ class User(Base):
         
     
     total_games_played = Column(Integer, default=0, nullable=False)
-    total_wins = Column(Integer, default=0, nullable=False)
-    win_rate = Column(Float, default=0.0, nullable=False) 
+    total_score = Column(Integer, default=0, nullable=False)
     best_score_easy = Column(Integer, default=0, nullable=False)
     best_score_medium = Column(Integer, default=0, nullable=False)
     best_score_hard = Column(Integer, default=0, nullable=False)
@@ -37,7 +36,7 @@ class Puzzles(Base):
     difficulty = Column(String(10), index=True, nullable=False) # Good to have a length
     board_string = Column(String(81), nullable=False)
     solution_string = Column(String(81), nullable=False)
-    is_used_in_challenge = Column(Boolean, default=False, nullable=False) # To avoid giving the same puzzle for multiple challenges
+    is_used = Column(Boolean, default=False, nullable=False) # A single game is used only once.
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     games = relationship("Games", back_populates="puzzle")
@@ -51,7 +50,7 @@ class Games(Base):
     puzzle_id = Column(pgUUID(as_uuid=True), ForeignKey("puzzles.id"), nullable=False)
     
     was_completed = Column(Boolean, default=False, nullable=False)
-    duration_seconds = Column(Integer)
+    duration_seconds = Column(Integer, default= 0)
     errors_made = Column(Integer, default=0, nullable=False)
     hints_used = Column(Integer, default=0, nullable=False)
     final_score = Column(Integer, default=0, nullable=False)

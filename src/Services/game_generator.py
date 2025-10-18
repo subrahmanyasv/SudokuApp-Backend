@@ -1,6 +1,8 @@
 import random
 from typing import List, Dict, Optional, Tuple
+from sqlalchemy.orm import Session
 from src.Config.settings import get_settings
+from src.API.Controllers.game_controller import add_games_to_db_util, get_games_count_util
 
 # --- Core Backtracking Algorithm ---
 def _fill_grid(grid: List[List[int]]) -> bool:
@@ -119,3 +121,22 @@ def generate_games(difficulty: str) -> List[Dict[str, str]]:
 
     print("Puzzle generation job complete.")
     return generated_puzzles
+
+
+
+def generate_initial_games(db: Session):
+    count = get_games_count_util(db)
+    if count == 0:
+        puzzles = generate_games('easy')
+        add_games_to_db_util(db,puzzles, "easy")
+
+        puzzles = generate_games('medium')
+        add_games_to_db_util(db, puzzles , "medium")
+
+        puzzles = generate_games('hard')
+        add_games_to_db_util(db, puzzles, "hard")
+
+        print("Games generated and added to DB")
+    else:
+        print("Games already exist in DB")
+
