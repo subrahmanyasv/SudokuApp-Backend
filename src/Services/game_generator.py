@@ -3,7 +3,8 @@ from typing import List, Dict, Optional, Tuple
 from sqlalchemy.orm import Session
 from src.Config.settings import get_settings
 from src.Config.database import getSessionLocal
-from src.API.Controllers.game_controller import add_games_to_db_util, get_games_count_util
+from src.Services.puzzle_service import add_games_to_db_util, get_games_count_util
+from src.Config.database import getSessionLocal
 
 # --- Core Backtracking Algorithm ---
 def _fill_grid(grid: List[List[int]]) -> bool:
@@ -124,23 +125,68 @@ def generate_games(difficulty: str) -> List[Dict[str, str]]:
     return generated_puzzles
 
 
+def generate_and_add_puzzles_task(difficulty: str):
+    """
+    Background task to generate and add new puzzles to the database.
+    This function creates its own database session.
+    """
+    print(f"Background task triggered: Generating puzzles for '{difficulty}'...")
+    dbSessonLocal = getSessionLocal()
+    
+    if not dbSessonLocal:
+        print("Error: Could not get database session for background task.")
+        return
 
-def generate_initial_games(db: Session):
-    count = get_games_count_util(db)
-    if count == 0:
-        puzzles = generate_games('easy')
-        add_games_to_db_util(db,puzzles, "easy")
+    db: Session = dbSessonLocal()
+    try:
+        puzzles = generate_games(difficulty)
+        add_games_to_db_util(db, puzzles, difficulty)
+        
+        print(f"Background task complete: Added {len(puzzles)} new '{difficulty}' puzzles.")
+    except Exception as e:
+        print(f"Error in background puzzle generation task: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
-        puzzles = generate_games('medium')
-        add_games_to_db_util(db, puzzles , "medium")
 
-        puzzles = generate_games('hard')
-        add_games_to_db_util(db, puzzles, "hard")
 
-        print("Games generated and added to DB")
-    else:
-        print("Games already exist in DB")
+def generate_initial_games():
+    """
+    Checks if the DB is empty and seeds it with initial puzzles.
+    This function creates and manages its own DB session to be thread-safe.
+    """
+    print("Checking if initial game seeding is needed...")
+    dbSessonLocal = getSessionLocal()
+    
+    if not dbSessonLocal:
+        print("Error: Could not get DB Session for generate_initial_games")
+        return
+    
+    db: Session = dbSessonLocal()
+    
+    try:
+        # Use the imported util function
+        count = get_games_count_util(db)
+        if count == 0:
+            print("Seeding database with initial puzzles...")
+            puzzles = generate_games('easy')
+            add_games_to_db_util(db,puzzles, "easy")
 
+            puzzles = generate_games('medium')
+            add_games_to_db_util(db, puzzles , "medium")
+
+            puzzles = generate_games('hard')
+            add_games_to_db_util(db, puzzles, "hard")
+
+            print("Games generated and added to DB")
+        else:
+            print("Games already exist in DB")
+    except Exception as e:
+        print(f"Error during initial game generation: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 def generate_and_save_puzzles_background_task(difficulty: str):

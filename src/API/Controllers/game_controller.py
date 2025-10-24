@@ -10,7 +10,7 @@ from src.Schemas.auth_schema import TokenPayload
 from src.Services.game_generator import generate_and_save_puzzles_background_task
 
 
-def new_game(user: TokenPayload, db: Session, difficulty: str) -> PuzzleBase:
+def new_game(user: TokenPayload, db: Session, difficulty: str, background_tasks: BackgroundTasks) -> PuzzleBase:
 
     puzzle_count = db.query(Puzzles).filter(
         Puzzles.difficulty == difficulty,
@@ -128,14 +128,3 @@ def update_game(user: TokenPayload, db: Session, game_data: GameBase) -> bool:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An unexpected server error occurred during game update."
         )
-
-
-def get_games_count_util(db: Session) -> int:
-        count = db.query(Puzzles).count()
-        return count
-
-def add_games_to_db_util(db: Session, games: List[Dict[str, str]] = [], difficulty: str = "easy"):
-
-    for game in games:
-        db.add(Puzzles(**game, difficulty=difficulty))
-    db.commit()
