@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, BackgroundTasks
 from typing import List, Dict
 import uuid # Ensure uuid is imported
 
@@ -7,6 +7,7 @@ from src.Security.security import validate_user
 from src.Models.TableModels import Games, Puzzles, User
 from src.Schemas.game_schema import GameBase, PuzzleBase, PuzzleCreate, GameCreate, UpdateResponse
 from src.Schemas.auth_schema import TokenPayload
+from src.Services.game_generator import generate_and_save_puzzles_background_task
 
 
 def new_game(user: TokenPayload, db: Session, difficulty: str) -> PuzzleBase:
@@ -17,12 +18,9 @@ def new_game(user: TokenPayload, db: Session, difficulty: str) -> PuzzleBase:
     ).count()
 
     if puzzle_count < 2:
-        # TODO: Implement a background task to generate more puzzles.
-        # This could be done using FastAPI's BackgroundTasks, Celery, etc.
-        print(f"Low puzzle stock for difficulty '{difficulty}'. Triggering generation.")
-
+        background_tasks.add_task(generate_and_save_puzzles_background_task, difficulty)
+        
     try:
-
         puzzle = db.query(Puzzles).filter(
             Puzzles.difficulty == difficulty,
             Puzzles.is_used == False

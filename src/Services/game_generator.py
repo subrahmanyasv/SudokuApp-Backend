@@ -2,6 +2,7 @@ import random
 from typing import List, Dict, Optional, Tuple
 from sqlalchemy.orm import Session
 from src.Config.settings import get_settings
+from src.Config.database import getSessionLocal
 from src.API.Controllers.game_controller import add_games_to_db_util, get_games_count_util
 
 # --- Core Backtracking Algorithm ---
@@ -140,3 +141,29 @@ def generate_initial_games(db: Session):
     else:
         print("Games already exist in DB")
 
+
+
+def generate_and_save_puzzles_background_task(difficulty: str):
+    """
+    Background task to generate and add new puzzles to the database.
+    This function creates its own database session.
+    """
+    print(f"Background task triggered: Generating puzzles for '{difficulty}'...")
+    dbSessonLocal = getSessionLocal()
+
+    if not dbSessonLocal:
+        print("Error: Could not get database session for background task.")
+        return
+
+    db: Session = dbSessonLocal()
+    try:
+        # Use existing functions to generate and save puzzles
+        puzzles = generate_games(difficulty)
+        add_games_to_db_util(db, puzzles, difficulty)
+        
+        print(f"Background task complete: Added {len(puzzles)} new '{difficulty}' puzzles.")
+    except Exception as e:
+        print(f"Error in background puzzle generation task: {e}")
+        db.rollback()
+    finally:
+        db.close()
