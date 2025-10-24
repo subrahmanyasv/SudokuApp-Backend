@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from src.Security.security import validate_user
@@ -13,9 +13,9 @@ router = APIRouter()
 @router.get("/new_game/{difficulty}",
     response_model=PuzzleBase,
     status_code=status.HTTP_200_OK)
-def new_game(user: TokenPayload = Depends(validate_user), db: Session = Depends(get_db_session), difficulty: str = "easy"):
+def new_game(background_tasks: BackgroundTasks, user: TokenPayload = Depends(validate_user), db: Session = Depends(get_db_session), difficulty: str = "easy"):
     try:
-        return game_controller.new_game(user, db, difficulty)
+        return game_controller.new_game(user, db, difficulty, background_tasks)
     except Exception as e:
         print(f"Error creating new game: {e}")
         return {"status": "error", "message": f"Error creating new game: {e}"}
