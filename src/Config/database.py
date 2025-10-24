@@ -15,7 +15,14 @@ def init_database():
     settings = get_settings()
     DATABASE_URL = settings.DB_URL
     
-    engine = create_engine(DATABASE_URL, pool_size = 5, max_overflow = 10, pool_timeout = 30, pool_recycle = 3600)
+    engine = create_engine(
+        DATABASE_URL, 
+        pool_size=5, 
+        max_overflow=10, 
+        pool_timeout=30, 
+        pool_recycle=300,  # <-- CHANGE: Recycle connections every 5 mins (was 3600)
+        pool_pre_ping=True  # <-- ADD: Check if connection is alive before using
+    )
 
     with engine.connect() as connection:
         print("Database connected successfully!")
