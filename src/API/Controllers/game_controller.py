@@ -15,7 +15,7 @@ def new_game(user: TokenPayload, db: Session, difficulty: str, background_tasks:
     puzzle_count = db.query(Puzzles).filter(
         Puzzles.difficulty == difficulty,
         Puzzles.is_used == False
-    ).count()
+    ).count()   
 
     if puzzle_count < 2:
         background_tasks.add_task(generate_and_save_puzzles_background_task, difficulty)
