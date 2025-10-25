@@ -14,7 +14,7 @@ def new_game(user: TokenPayload, db: Session, difficulty: str) -> PuzzleBase:
     puzzle_count = db.query(Puzzles).filter(
         Puzzles.difficulty == difficulty,
         Puzzles.is_used == False
-    ).count()
+    ).count()   
 
     if puzzle_count < 2:
         # TODO: Implement a background task to generate more puzzles.
