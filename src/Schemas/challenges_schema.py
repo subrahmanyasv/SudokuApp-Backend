@@ -54,6 +54,7 @@ class ChallengePuzzle(BaseModel):
     id: UUID
     difficulty: str
     board_string: str # The initial puzzle board
+    solution_string: str # The solved puzzle board
 
     class Config:
         from_attributes = True
