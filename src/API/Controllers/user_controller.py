@@ -1,5 +1,6 @@
 # SudokuApp-Backend/src/API/Controllers/user_controller.py
 
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import List, Optional # Ensure List is imported
@@ -28,41 +29,42 @@ def get_user_data(db: Session, user: TokenPayload) -> UserData:
         best_score_hard=db_user.best_score_hard,
     )
 
-def get_in_progress_game(db: Session, user: TokenPayload) -> List[GameResponseWithPuzzle]:
+# *** MODIFIED: Return only Optional[GameResponseWithPuzzle] ***
+def get_in_progress_game(db: Session, user: TokenPayload) -> Optional[GameResponseWithPuzzle]:
     """
-    Retrieves the user's currently in-progress games (not completed).
-    Returns a list of games.
+    Retrieves the user's single most recent in-progress game.
+    Returns the game details or None if no incomplete game exists.
     """
-    in_progress_games = db.query(Games).join(Puzzles).filter(
+    # *** FIX: Query for the first game ordered by last_played descending ***
+    in_progress_game = db.query(Games).join(Puzzles).filter(
         Games.user_id == user.id,
         Games.was_completed == False # Filter for incomplete games
-    ).order_by(Games.last_played.desc()).all() # Fetch all matching games
+    ).order_by(desc(Games.last_played)).first() # Get the most recent one
 
-    games_response_list = []
-    if in_progress_games:
-        for game in in_progress_games:
-            puzzle_data = PuzzleBase(
-                id=game.puzzle.id,
-                gameId=game.id, # Link back to the game ID
-                difficulty=game.puzzle.difficulty,
-                board_string=game.puzzle.board_string,
-                solution_string=game.puzzle.solution_string
-            )
-            game_data = GameResponseWithPuzzle(
-                id=game.id,
-                difficulty=game.puzzle.difficulty, # Include difficulty directly
-                was_completed=game.was_completed,
-                duration_seconds=game.duration_seconds,
-                errors_made=game.errors_made,
-                hints_used=game.hints_used,
-                final_score=game.final_score,
-                completed_at=game.completed_at,
-                current_state=game.current_state, # Include current state
-                puzzle=puzzle_data
-            )
-            games_response_list.append(game_data)
+    if not in_progress_game:
+        return None # Return None if no game is found
 
-    return games_response_list
+    # Construct the response object if a game is found
+    puzzle_data = PuzzleBase(
+        id=in_progress_game.puzzle.id,
+        gameId=in_progress_game.id, # Include gameId
+        difficulty=in_progress_game.puzzle.difficulty,
+        board_string=in_progress_game.puzzle.board_string,
+        solution_string=in_progress_game.puzzle.solution_string
+    )
+    game_data = GameResponseWithPuzzle(
+        id=in_progress_game.id,
+        difficulty=in_progress_game.puzzle.difficulty, # Get difficulty from puzzle
+        was_completed=in_progress_game.was_completed,
+        duration_seconds=in_progress_game.duration_seconds,
+        errors_made=in_progress_game.errors_made,
+        hints_used=in_progress_game.hints_used,
+        final_score=in_progress_game.final_score,
+        completed_at=in_progress_game.completed_at,
+        current_state=in_progress_game.current_state,
+        puzzle=puzzle_data
+    )
+    return game_data
 
 
 # --- NEW FUNCTION for Game History ---

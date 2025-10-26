@@ -45,7 +45,7 @@ def get_in_progress_game_route(user: TokenPayload = Depends(validate_user), db: 
     or null if no incomplete game exists.
     """
     try:
-        game_data = user_controller.get_in_progress_game(UUID(str(user.id)), db) # Ensure ID is UUID
+        game_data = user_controller.get_in_progress_game(db,user) # Ensure ID is UUID
         return game_data # Will return the game object or None
     except HTTPException as http_exc:
         # Re-raise known exceptions
