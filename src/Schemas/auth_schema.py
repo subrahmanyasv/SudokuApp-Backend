@@ -18,6 +18,7 @@ class AuthResponse(BaseModel):
     status: str
     message: str
     token: Optional[str]
+    userId: Optional[str] # Changed from UUID to str to match token payload and ease frontend use
 
 
 class TokenPayload(BaseModel):

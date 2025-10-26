@@ -1,7 +1,7 @@
 # src/API/Controllers/challenge_controller.py
 
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_ # Import or_
 from fastapi import HTTPException, status
 from typing import List, Optional
 from uuid import UUID
@@ -58,7 +58,7 @@ def create_challenge(user: TokenPayload, db: Session, challenge_data: ChallengeC
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Puzzle with id {challenge_data.puzzle_id} not found."
             )
-        
+
         # Check for existing pending challenge between these users for this puzzle
         existing_challenge = db.query(Challenges).filter(
             Challenges.puzzle_id == challenge_data.puzzle_id,
@@ -92,7 +92,7 @@ def create_challenge(user: TokenPayload, db: Session, challenge_data: ChallengeC
         # 3. Fetch the full data for the response
         # We query it again using the helper to load all relationships
         response_data = _get_challenge_query(db).filter(Challenges.id == new_challenge.id).first()
-        
+
         if not response_data:
              # This should not happen, but good to check
              raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve challenge after creation.")
@@ -110,25 +110,31 @@ def create_challenge(user: TokenPayload, db: Session, challenge_data: ChallengeC
             detail="An unexpected server error occurred while creating the challenge."
         )
 
-
+# *** UPDATED FUNCTION ***
 def get_my_challenges(user: TokenPayload, db: Session) -> List[ChallengeResponse]:
     """
-    Retrieves all challenges (pending, active, completed) where the user
-    is either the challenger or the opponent.
+    Retrieves relevant challenges (incoming pending, outgoing pending/accepted)
+    where the user is either the challenger or the opponent.
     """
     try:
         user_id = user.id
-        
+
         # Use the helper to get the base query with eager loading
+        # Filter for challenges where the user is either the opponent (pending)
+        # OR the challenger (pending or accepted)
         challenges = _get_challenge_query(db).filter(
-                Challenges.opponent_id == user_id,
-                Challenges.status == "pending"
-        ).order_by(Challenges.created_at.desc()).all()
+            or_(
+                # Incoming: Opponent is user AND status is pending
+                (Challenges.opponent_id == user_id) & (Challenges.status == "pending"),
+                # Outgoing: Challenger is user AND status is pending OR accepted
+                (Challenges.challenger_id == user_id) & (Challenges.status.in_(['pending', 'accepted']))
+            )
+        ).order_by(Challenges.created_at.desc()).all() # Order by most recent first
 
         return challenges
 
     except Exception as e:
-        db.rollback() 
+        db.rollback()
         print(f"Error getting challenges: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -159,13 +165,16 @@ def respond_to_challenge(user: TokenPayload, db: Session, challenge_id: UUID, re
         # Update status based on action
         if response_data.action == "accept":
             challenge.status = "accepted"
+            # Maybe add logic here to create a new 'Games' entry for the opponent?
+            # Or handle game creation when the opponent starts playing.
         elif response_data.action == "reject":
             challenge.status = "rejected"
-        
+            # Could potentially clean up rejected challenges after some time
+
         db.add(challenge)
         db.commit()
         db.refresh(challenge)
-        
+
         return challenge
 
     except HTTPException as http_exc:
@@ -200,24 +209,24 @@ def complete_challenge(user: TokenPayload, db: Session, challenge_id: UUID, comp
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Accepted challenge not found or you do not have permission to complete it."
             )
-        
-        # 1. Set opponent's score
+
+        # 1. Set opponent's score (duration)
         challenge.opponent_duration = completion_data.opponent_duration
 
-        # 2. Determine winner (tie goes to challenger)
-        if completion_data.opponent_duration < challenge.challenger_duration:
+        # 2. Determine winner (lower duration wins, tie goes to challenger)
+        if challenge.opponent_duration is not None and challenge.opponent_duration < challenge.challenger_duration:
             challenge.winner_id = user_id # Opponent wins
         else:
-            challenge.winner_id = challenge.challenger_id # Challenger wins
+            challenge.winner_id = challenge.challenger_id # Challenger wins (includes ties or if opponent duration is missing)
 
-        # 3. Update status
+        # 3. Update status and completion timestamp
         challenge.status = "completed"
         challenge.completed_at = datetime.datetime.utcnow()
 
         db.add(challenge)
         db.commit()
         db.refresh(challenge)
-        
+
         # 4. Return the fully populated, completed challenge
         return challenge
 
