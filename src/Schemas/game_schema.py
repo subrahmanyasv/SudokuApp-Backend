@@ -31,6 +31,10 @@ class GameBase(BaseModel):
     hints_used: int
     final_score: int
     completed_at: Optional[Union[str, datetime]] = None
+    current_state: Optional[str] = None # New field for current board state
+
+    class Config:
+        from_attributes = True
 
 # New Schema: Game response including puzzle details
 class GameResponseWithPuzzle(GameBase):

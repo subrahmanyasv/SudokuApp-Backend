@@ -1,7 +1,10 @@
+# SudokuApp-Backend/src/Models/TableModels.py
+
 import uuid
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as pgUUID
 from sqlalchemy.orm import relationship
+import datetime # Import datetime
 
 from src.Config.database import Base
 
@@ -12,14 +15,14 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-        
-    
+
+
     total_games_played = Column(Integer, default=0, nullable=False)
     total_score = Column(Integer, default=0, nullable=False)
     best_score_easy = Column(Integer, default=0, nullable=False)
     best_score_medium = Column(Integer, default=0, nullable=False)
     best_score_hard = Column(Integer, default=0, nullable=False)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
@@ -48,13 +51,20 @@ class Games(Base):
     id = Column(pgUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(pgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     puzzle_id = Column(pgUUID(as_uuid=True), ForeignKey("puzzles.id"), nullable=False)
-    
+
     was_completed = Column(Boolean, default=False, nullable=False)
     duration_seconds = Column(Integer, default= 0)
     errors_made = Column(Integer, default=0, nullable=False)
     hints_used = Column(Integer, default=0, nullable=False)
     final_score = Column(Integer, default=0, nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    # *** ADDED: Column to store the current state of the board ***
+    current_state = Column(String(81), nullable=True) # 81 chars for the board
+
+    # *** ADDED: Timestamp for last played/saved action ***
+    last_played = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
 
     user = relationship("User", back_populates="games")
     puzzle = relationship("Puzzles", back_populates="games")
@@ -70,7 +80,7 @@ class Challenges(Base):
     challenger_duration = Column(Integer)
     opponent_duration = Column(Integer)
     winner_id = Column(pgUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
@@ -86,11 +96,10 @@ class Leaderboard(Base):
     # Composite Primary Key
     user_id = Column(pgUUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
     difficulty = Column(String(10), primary_key=True)
-    timespan = Column(String(10), primary_key=True)  
+    timespan = Column(String(10), primary_key=True)
     username = Column(String(50), nullable=False)
-    total_score = Column(Integer, nullable=False) 
+    total_score = Column(Integer, nullable=False)
     rank = Column(Integer, nullable=False)
     last_updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     user = relationship("User", back_populates="leaderboard_entries")
-
