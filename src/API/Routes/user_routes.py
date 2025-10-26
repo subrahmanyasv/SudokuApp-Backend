@@ -8,7 +8,7 @@ from uuid import UUID # Import UUID
 from src.Config.database import get_db_session
 from src.Schemas.game_schema import GameResponseWithPuzzle # This now includes current_state
 from src.Security.security import validate_user
-from src.Schemas.user_schema import UserData, User as baseUser, UserResponse
+from src.Schemas.user_schema import UserData, User as baseUser, UserResponse, UserBase
 from src.Schemas.auth_schema import TokenPayload
 from src.API.Controllers import user_controller
 
@@ -80,3 +80,16 @@ def get_game_history_route(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not fetch game history."
         )
+
+
+@router.get("/user_list",
+    response_model=List[UserBase],
+    status_code=status.HTTP_200_OK)
+def get_user_list(user: TokenPayload = Depends(validate_user), db: Session = Depends(get_db_session)):
+    try:
+        return user_controller.get_user_list(db, user)
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print(f"Error getting user list in router: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

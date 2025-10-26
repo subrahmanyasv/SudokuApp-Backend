@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from typing import List, Optional # Ensure List is imported
 
 from src.Models.TableModels import User, Games, Puzzles # Ensure Games and Puzzles are imported
-from src.Schemas.user_schema import UserData, UserResponse
+from src.Schemas.user_schema import UserData, UserResponse, UserBase
 from src.Schemas.auth_schema import TokenPayload
 from src.Schemas.game_schema import GameResponseWithPuzzle, PuzzleBase # Import necessary game schemas
 
@@ -103,3 +103,27 @@ def get_game_history(db: Session, user: TokenPayload) -> List[GameResponseWithPu
             history_list.append(game_data)
 
     return history_list
+
+
+def get_user_list(db: Session, user: TokenPayload) -> List[UserBase]:
+    try:
+        current_user_id = user.id
+        all_other_users = db.query(User).filter(
+            User.id != current_user_id
+        ).order_by(User.username).all()
+        user_list = [
+            UserBase(
+                id=db_user.id,
+                username=db_user.username,
+                email=db_user.email
+            )
+            for db_user in all_other_users
+        ]
+        return user_list
+
+    except Exception as e:
+        print(f"Error getting user list: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected server error occurred while fetching the user list."
+        )
