@@ -12,6 +12,7 @@ from src.Config.database import init_database, create_db_and_tables, close_datab
 from src.API.Routes.auth_routes import router as authRouter
 from src.API.Routes.user_routes import router as userRouter
 from src.API.Routes.game_routers import router as gameRouter 
+from src.API.Routes.challenges_routes import router as challengesRouter
 from src.API.Routes.leaderboard_routes import router as leaderboardRouter
 from src.Services.game_generator import generate_initial_games
 
@@ -104,6 +105,8 @@ app.include_router(authRouter, prefix="/api/auth", tags=["Authentication"])
 app.include_router(userRouter, prefix="/api/user", tags=["User"])
 app.include_router(gameRouter, prefix="/api/game", tags=["Game"])
 app.include_router(leaderboardRouter, prefix="/api/leaderboard", tags=["Leaderboard"])
+app.include_router(challengesRouter, prefix="/api/challenges", tags=["Challenges"])
+
 
 @app.get("/")
 def root_route():

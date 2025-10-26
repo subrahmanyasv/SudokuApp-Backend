@@ -53,19 +53,20 @@ def create_challenge_route(
     "/",
     response_model=List[ChallengeResponse],
     status_code=status.HTTP_200_OK,
-    summary="Get All Pending Incoming Challenges"
+    # Updated summary to reflect backend controller logic change
+    summary="Get Relevant Challenges (Incoming Pending, Outgoing Pending/Accepted)"
 )
 def get_my_challenges_route(
     user: TokenPayload = Depends(validate_user),
     db: Session = Depends(get_db_session)
 ):
     """
-    Fetches all challenges for the authenticated user where they
-    are the *opponent* and the challenge status is *pending*.
-    
-    (This route reflects your modified get_my_challenges controller logic)
+    Fetches challenges relevant to the authenticated user:
+    - Incoming challenges where the user is the opponent and status is 'pending'.
+    - Outgoing challenges where the user is the challenger and status is 'pending' or 'accepted'.
     """
     try:
+        # Assuming challenges_controller.get_my_challenges now fetches both types
         return challenges_controller.get_my_challenges(user, db)
     except HTTPException as http_exc:
         raise http_exc
