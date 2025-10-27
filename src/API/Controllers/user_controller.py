@@ -13,12 +13,26 @@ from src.Schemas.game_schema import GameHistoryItem, PuzzleBase
 
 def get_user_data(db: Session, user: TokenPayload) -> UserData:
     """
-    Retrieves user profile data including game statistics.
+    Retrieves user profile data including game statistics and challenge statistics.
     """
-    db_user = db.query(User).filter(User.id == user.id).first()
+    user_id = user.id # Get UUID directly
+    db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    # *** ADDED: Calculate Challenge Stats ***
+    total_challenges_played = db.query(Challenges).filter(
+        Challenges.status == "completed",
+        or_(Challenges.challenger_id == user_id, Challenges.opponent_id == user_id)
+    ).count()
+
+    total_challenges_won = db.query(Challenges).filter(
+        Challenges.status == "completed",
+        Challenges.winner_id == user_id
+    ).count()
+    # *** END: Calculate Challenge Stats ***
+
+    # Use 0 as fallback for nullable integer fields
     return UserData(
         id=db_user.id,
         username=db_user.username,
@@ -27,8 +41,12 @@ def get_user_data(db: Session, user: TokenPayload) -> UserData:
         total_score=db_user.total_score or 0,
         best_score_easy=db_user.best_score_easy or 0,
         best_score_medium=db_user.best_score_medium or 0,
-        best_score_hard=db_user.best_score_hard or 0
+        best_score_hard=db_user.best_score_hard or 0,
+        # *** ADDED: Pass Challenge Stats to Schema ***
+        total_challenges_played=total_challenges_played,
+        total_challenges_won=total_challenges_won
     )
+
 
 
 def get_in_progress_game(db: Session, user: TokenPayload) -> Optional[GameHistoryItem]:
